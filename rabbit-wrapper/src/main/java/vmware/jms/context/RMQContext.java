@@ -16,8 +16,10 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import vmware.jms.RMQMessage;
 import vmware.jms.RMQQueue;
 import vmware.jms.RMQQueueConnectionFactory;
+import vmware.jms.RMQTextMessage;
 import vmware.jms.RMQTopic;
 
 public class RMQContext implements Context {
@@ -27,6 +29,11 @@ public class RMQContext implements Context {
     public static final String QUEUE_PREFIX = "queue.";
     public static final String TOPIC_PREFIX = "topic.";
     public static final String CONNECTIONFACTORY_PREFIX = "connectionfactory.";
+
+    /** the suffix for a queue that tells us the message type to use on reads for that queue */
+    public static final String MESSAGE_CLASS_NAME_SUFFIX = ".messageclass";
+    /** the default is the mext message class */
+    public static final String MESSAGE_CLASS_DEFAULT = RMQTextMessage.class.getName();
 
     public RMQContext(Hashtable<?, ?> properties) {
         this.properties = properties;
@@ -217,7 +224,21 @@ public class RMQContext implements Context {
     private Queue findQueueForName(String arg0) {
         String nameFromProps = (String) properties.get(QUEUE_PREFIX + arg0);
         if (nameFromProps != null) {
-            RMQQueue queue = new RMQQueue(nameFromProps);
+            String messageTypeClassNameFromProps = (String) properties.get(QUEUE_PREFIX + arg0 + MESSAGE_CLASS_NAME_SUFFIX);
+            String messageTypeClassName = MESSAGE_CLASS_DEFAULT;
+            if (messageTypeClassNameFromProps != null) {
+                messageTypeClassName = messageTypeClassNameFromProps;
+            }
+            try {
+                Class calculatedMessageClass = Class.forName(messageTypeClassName);
+                if (!RMQMessage.class.isAssignableFrom(calculatedMessageClass)) {
+                    throw new IllegalArgumentException("Unable to use find class " + messageTypeClassName + " as message type");
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+                throw new IllegalArgumentException("Unable to load class " + messageTypeClassName + " - " + e.getMessage());
+            }
+            RMQQueue queue = new RMQQueue(nameFromProps, messageTypeClassName);
             return queue;
         } else {
             return null;

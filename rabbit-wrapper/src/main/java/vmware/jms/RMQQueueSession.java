@@ -81,8 +81,7 @@ public class RMQQueueSession implements QueueSession {
     }
 
     @Override
-    public TopicSubscriber createDurableSubscriber(Topic arg0, String arg1, String arg2, boolean arg3)
-            throws JMSException {
+    public TopicSubscriber createDurableSubscriber(Topic arg0, String arg1, String arg2, boolean arg3) throws JMSException {
         throw new NotImplementedException();
     }
 
@@ -196,7 +195,8 @@ public class RMQQueueSession implements QueueSession {
     public QueueReceiver createReceiver(Queue queueDefinition) throws JMSException {
         try {
             channel.queueDeclare(queueDefinition.getQueueName(), false, false, false, null);
-            return new RMQQueueReceiver(channel, queueDefinition);
+            // cast because we are moving from general API to RMQ api
+            return new RMQQueueReceiver(channel, (RMQQueue) queueDefinition);
         } catch (IOException e) {
             e.printStackTrace();
             throw new JMSException("Unable to declare queue " + queueDefinition.getQueueName() + " on channel");

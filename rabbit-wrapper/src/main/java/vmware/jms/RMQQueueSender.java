@@ -100,8 +100,7 @@ public class RMQQueueSender implements QueueSender {
     public void send(Message arg0) throws JMSException {
         if (arg0 instanceof TextMessage) {
             try {
-                channel.basicPublish("", queueDefinition.getQueueName(), null, ((TextMessage) arg0).getText()
-                        .getBytes());
+                channel.basicPublish("", queueDefinition.getQueueName(), null, ((TextMessage) arg0).getText().getBytes());
             } catch (IOException e) {
                 e.printStackTrace();
                 throw new JMSException("Failed ot publish text message");

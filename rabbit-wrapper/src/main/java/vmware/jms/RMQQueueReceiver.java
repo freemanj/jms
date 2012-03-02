@@ -16,9 +16,9 @@ import com.rabbitmq.client.GetResponse;
 public class RMQQueueReceiver implements QueueReceiver {
 
     com.rabbitmq.client.Channel channel;
-    Queue queueDefinition;
+    RMQQueue queueDefinition;
 
-    public RMQQueueReceiver(com.rabbitmq.client.Channel channel, Queue queueDefinition) {
+    public RMQQueueReceiver(com.rabbitmq.client.Channel channel, RMQQueue queueDefinition) {
         this.channel = channel;
         this.queueDefinition = queueDefinition;
     }
@@ -47,8 +47,12 @@ public class RMQQueueReceiver implements QueueReceiver {
             byte[] body = amqpResponse.getBody();
             long deliveryTag = amqpResponse.getEnvelope().getDeliveryTag();
             channel.basicAck(deliveryTag, false);
-            // how do we know what data type to use?
-            return new RMQTextMessage(new String(body));
+            String receiverClassName = queueDefinition.getMessageClassName();
+            if (receiverClassName.equals(RMQTextMessage.class.getName())) {
+                return new RMQTextMessage(body);
+            } else {
+                throw new IllegalArgumentException("Only supports inbound byte or text message class");
+            }
         } catch (IOException e) {
             e.printStackTrace();
             throw new JMSException("Unable to get response " + e.getLocalizedMessage());
